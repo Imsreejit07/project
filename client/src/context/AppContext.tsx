@@ -1,8 +1,17 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect, ReactNode } from 'react';
-import * as api from '../api';
+import * as api from '@/api';
 import { Goal, Project, Task, UserStats, DailyPlanResult, ChatMessage } from '../types';
 
+interface CurrentUser {
+    id: string;
+    name: string;
+    email: string;
+    plan: 'free' | 'pro';
+    role: 'user' | 'admin';
+}
+
 interface AppState {
+    currentUser: CurrentUser | null;
     goals: Goal[];
     projects: Project[];
     tasks: Task[];
@@ -21,6 +30,7 @@ interface AppState {
 }
 
 type Action =
+    | { type: 'SET_CURRENT_USER'; user: CurrentUser | null }
     | { type: 'SET_GOALS'; goals: Goal[] }
     | { type: 'SET_PROJECTS'; projects: Project[] }
     | { type: 'SET_TASKS'; tasks: Task[] }
@@ -47,6 +57,7 @@ type Action =
     | { type: 'TOGGLE_CREATE_PROJECT' };
 
 const initialState: AppState = {
+    currentUser: null,
     goals: [],
     projects: [],
     tasks: [],
@@ -66,6 +77,7 @@ const initialState: AppState = {
 
 function reducer(state: AppState, action: Action): AppState {
     switch (action.type) {
+        case 'SET_CURRENT_USER': return { ...state, currentUser: action.user };
         case 'SET_GOALS': return { ...state, goals: action.goals };
         case 'SET_PROJECTS': return { ...state, projects: action.projects };
         case 'SET_TASKS': return { ...state, tasks: action.tasks };
@@ -116,18 +128,20 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function AppProvider({ children, currentUser }: { children: ReactNode; currentUser?: CurrentUser | null }) {
     const [state, dispatch] = useReducer(reducer, initialState);
 
     const loadAll = useCallback(async () => {
         dispatch({ type: 'SET_LOADING', key: 'init', value: true });
         try {
-            const [goals, projects, tasks, stats] = await Promise.all([
+            const [me, goals, projects, tasks, stats] = await Promise.all([
+                api.getMe(),
                 api.getGoals(),
                 api.getProjects(),
                 api.getTasks(),
                 api.getStats(),
             ]);
+            dispatch({ type: 'SET_CURRENT_USER', user: me as CurrentUser });
             dispatch({ type: 'SET_GOALS', goals });
             dispatch({ type: 'SET_PROJECTS', projects });
             dispatch({ type: 'SET_TASKS', tasks });
@@ -215,11 +229,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 type: 'ADD_CHAT_MESSAGE',
                 message: { role: 'assistant', content: result.response, actions: result.actions, timestamp: new Date().toISOString() }
             });
-            // Refresh data if actions were performed
             if (result.actions?.length > 0) {
                 await loadAll();
             }
-        } catch (e) {
+        } catch {
             dispatch({
                 type: 'ADD_CHAT_MESSAGE',
                 message: { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.', timestamp: new Date().toISOString() }
@@ -228,6 +241,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             dispatch({ type: 'SET_LOADING', key: 'chat', value: false });
         }
     }, [state.conversationId, loadAll]);
+
+    useEffect(() => {
+        if (currentUser) {
+            dispatch({ type: 'SET_CURRENT_USER', user: currentUser });
+        }
+    }, [currentUser]);
 
     useEffect(() => {
         loadAll();

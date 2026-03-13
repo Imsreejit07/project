@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CalendarDays, Sun, Cloud, Moon, Zap, Clock, RefreshCw, Check, Lightbulb } from 'lucide-react';
-import * as api from '../api';
+import * as api from '@/api';
 import { DailyPlanResult } from '../types';
 
 export default function PlanView() {

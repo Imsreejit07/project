@@ -1,7 +1,7 @@
 import { useApp } from '../context/AppContext';
 import { Target, ListTodo, CalendarDays, AlertTriangle, TrendingUp, Clock, Plus, Zap, ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import * as api from '../api';
+import * as api from '@/api';
 
 export default function Dashboard() {
     const { state, dispatch, actions } = useApp();
@@ -34,7 +34,9 @@ export default function Dashboard() {
         <div className="animate-fade-in space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-surface-900">{greeting}</h1>
+                <h1 className="text-2xl font-bold text-surface-900">
+                    {greeting}{state.currentUser?.name ? `, ${state.currentUser.name}` : ''}
+                </h1>
                 <p className="text-surface-500 mt-1">
                     {stats && stats.pendingTasks > 0
                         ? `You have ${stats.pendingTasks} pending task${stats.pendingTasks > 1 ? 's' : ''}. Let's make progress.`

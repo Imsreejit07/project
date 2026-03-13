@@ -28,6 +28,7 @@ export default {
                     700: '#495057',
                     800: '#343a40',
                     900: '#212529',
+                    950: '#0f172a',
                 },
                 success: { DEFAULT: '#40c057', light: '#d3f9d8' },
                 warning: { DEFAULT: '#fab005', light: '#fff3bf' },
@@ -35,8 +36,11 @@ export default {
                 accent: { DEFAULT: '#7950f2', light: '#e5dbff' },
             },
             fontFamily: {
-                sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                sans: ['Space Grotesk', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
                 mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+            },
+            backgroundImage: {
+                'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
             },
             animation: {
                 'slide-up': 'slideUp 0.3s ease-out',

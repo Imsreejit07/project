@@ -2,88 +2,93 @@ import { Router, Request, Response } from 'express';
 import * as ops from '../db/operations.js';
 import { generateDailyPlan, suggestNextActions, analyzePatterns } from '../ai/planningEngine.js';
 import { processMessage } from '../ai/assistant.js';
+import { requireAuthWithPlan, planLimiter, AuthRequest } from '../auth/middleware.js';
+import { aiLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
-// Middleware to extract userId (simplified - in production, use auth)
-function getUserId(req: Request): string {
-    return (req.headers['x-user-id'] as string) || 'default-user';
-}
+router.use(requireAuthWithPlan);
 
 // ─── User ───
 
-router.get('/user', (req: Request, res: Response) => {
-    const user = ops.getOrCreateUser(getUserId(req));
+router.get('/user', async (req: Request, res: Response) => {
+    const user = await ops.getOrCreateUser((req as AuthRequest).userId);
     res.json(user);
 });
 
-router.put('/user/settings', (req: Request, res: Response) => {
-    ops.updateUserSettings(getUserId(req), req.body);
+router.put('/user/settings', async (req: Request, res: Response) => {
+    await ops.updateUserSettings((req as AuthRequest).userId, req.body);
     res.json({ success: true });
 });
 
 // ─── Goals ───
 
-router.get('/goals', (req: Request, res: Response) => {
-    const goals = ops.getGoals(getUserId(req), req.query.status as string);
+router.get('/goals', async (req: Request, res: Response) => {
+    const goals = await ops.getGoals((req as AuthRequest).userId, req.query.status as string);
     res.json(goals);
 });
 
-router.post('/goals', (req: Request, res: Response) => {
-    const goal = ops.createGoal(getUserId(req), req.body);
+router.post('/goals', planLimiter('goals', 3), async (req: Request, res: Response) => {
+    const goal = await ops.createGoal((req as AuthRequest).userId, req.body);
     res.status(201).json(goal);
 });
 
-router.get('/goals/:id', (req: Request, res: Response) => {
-    const goal = ops.getGoal(req.params.id as string);
-    if (!goal) return res.status(404).json({ error: 'Goal not found' });
+router.get('/goals/:id', async (req: Request, res: Response) => {
+    const goal = await ops.getGoal(req.params.id as string);
+    if (!goal || goal.user_id !== (req as AuthRequest).userId) return res.status(404).json({ error: 'Goal not found' });
     res.json(goal);
 });
 
-router.put('/goals/:id', (req: Request, res: Response) => {
-    const goal = ops.updateGoal(req.params.id as string, req.body);
-    if (!goal) return res.status(404).json({ error: 'Goal not found' });
+router.put('/goals/:id', async (req: Request, res: Response) => {
+    const existing = await ops.getGoal(req.params.id as string);
+    if (!existing || existing.user_id !== (req as AuthRequest).userId) return res.status(404).json({ error: 'Goal not found' });
+    const goal = await ops.updateGoal(req.params.id as string, req.body);
     res.json(goal);
 });
 
-router.delete('/goals/:id', (req: Request, res: Response) => {
-    ops.deleteGoal(req.params.id as string);
+router.delete('/goals/:id', async (req: Request, res: Response) => {
+    const existing = await ops.getGoal(req.params.id as string);
+    if (!existing || existing.user_id !== (req as AuthRequest).userId) return res.status(404).json({ error: 'Goal not found' });
+    await ops.deleteGoal(req.params.id as string);
     res.json({ success: true });
 });
 
 // ─── Projects ───
 
-router.get('/projects', (req: Request, res: Response) => {
-    const projects = ops.getProjects(getUserId(req), req.query.goal_id as string, req.query.status as string);
+router.get('/projects', async (req: Request, res: Response) => {
+    const projects = await ops.getProjects((req as AuthRequest).userId, req.query.goal_id as string, req.query.status as string);
     res.json(projects);
 });
 
-router.post('/projects', (req: Request, res: Response) => {
-    const project = ops.createProject(getUserId(req), req.body);
+router.post('/projects', planLimiter('projects', 1), async (req: Request, res: Response) => {
+    const project = await ops.createProject((req as AuthRequest).userId, req.body);
     res.status(201).json(project);
 });
 
-router.get('/projects/:id', (req: Request, res: Response) => {
-    const project = ops.getProject(req.params.id as string);
-    if (!project) return res.status(404).json({ error: 'Project not found' });
+router.get('/projects/:id', async (req: Request, res: Response) => {
+    const project = await ops.getProject(req.params.id as string);
+    if (!project || project.user_id !== (req as AuthRequest).userId) return res.status(404).json({ error: 'Project not found' });
     res.json(project);
 });
 
-router.put('/projects/:id', (req: Request, res: Response) => {
-    const project = ops.updateProject(req.params.id as string, req.body);
-    if (!project) return res.status(404).json({ error: 'Project not found' });
+router.put('/projects/:id', async (req: Request, res: Response) => {
+    const existing = await ops.getProject(req.params.id as string);
+    if (!existing || existing.user_id !== (req as AuthRequest).userId) return res.status(404).json({ error: 'Project not found' });
+    const project = await ops.updateProject(req.params.id as string, req.body);
     res.json(project);
 });
 
-router.delete('/projects/:id', (req: Request, res: Response) => {
-    ops.deleteProject(req.params.id as string);
+router.delete('/projects/:id', async (req: Request, res: Response) => {
+    const existing = await ops.getProject(req.params.id as string);
+    if (!existing || existing.user_id !== (req as AuthRequest).userId) return res.status(404).json({ error: 'Project not found' });
+    await ops.deleteProject(req.params.id as string);
     res.json({ success: true });
 });
 
 // ─── Tasks ───
 
-router.get('/tasks', (req: Request, res: Response) => {
-    const tasks = ops.getTasks(getUserId(req), {
+router.get('/tasks', async (req: Request, res: Response) => {
+    const tasks = await ops.getTasks((req as AuthRequest).userId, {
         status: req.query.status as string,
         project_id: req.query.project_id as string,
         goal_id: req.query.goal_id as string,
@@ -93,68 +98,70 @@ router.get('/tasks', (req: Request, res: Response) => {
     res.json(tasks);
 });
 
-router.post('/tasks', (req: Request, res: Response) => {
-    const task = ops.createTask(getUserId(req), req.body);
+router.post('/tasks', planLimiter('tasks', 10), async (req: Request, res: Response) => {
+    const task = await ops.createTask((req as AuthRequest).userId, req.body);
     res.status(201).json(task);
 });
 
-router.get('/tasks/:id', (req: Request, res: Response) => {
-    const task = ops.getTask(req.params.id as string);
-    if (!task) return res.status(404).json({ error: 'Task not found' });
+router.get('/tasks/:id', async (req: Request, res: Response) => {
+    const task = await ops.getTask(req.params.id as string);
+    if (!task || task.user_id !== (req as AuthRequest).userId) return res.status(404).json({ error: 'Task not found' });
     res.json(task);
 });
 
-router.put('/tasks/:id', (req: Request, res: Response) => {
-    const task = ops.updateTask(req.params.id as string, req.body);
-    if (!task) return res.status(404).json({ error: 'Task not found' });
+router.put('/tasks/:id', async (req: Request, res: Response) => {
+    const existing = await ops.getTask(req.params.id as string);
+    if (!existing || existing.user_id !== (req as AuthRequest).userId) return res.status(404).json({ error: 'Task not found' });
+    const task = await ops.updateTask(req.params.id as string, req.body);
     res.json(task);
 });
 
-router.delete('/tasks/:id', (req: Request, res: Response) => {
-    ops.deleteTask(req.params.id as string);
+router.delete('/tasks/:id', async (req: Request, res: Response) => {
+    const existing = await ops.getTask(req.params.id as string);
+    if (!existing || existing.user_id !== (req as AuthRequest).userId) return res.status(404).json({ error: 'Task not found' });
+    await ops.deleteTask(req.params.id as string);
     res.json({ success: true });
 });
 
 // ─── Work Sessions ───
 
-router.post('/sessions/start', (req: Request, res: Response) => {
-    const session = ops.startWorkSession(getUserId(req), req.body.task_id);
+router.post('/sessions/start', async (req: Request, res: Response) => {
+    const session = await ops.startWorkSession((req as AuthRequest).userId, req.body.task_id);
     res.status(201).json(session);
 });
 
-router.post('/sessions/:id/end', (req: Request, res: Response) => {
-    const session = ops.endWorkSession(req.params.id as string, req.body);
+router.post('/sessions/:id/end', async (req: Request, res: Response) => {
+    const session = await ops.endWorkSession(req.params.id as string, req.body);
     if (!session) return res.status(404).json({ error: 'Session not found' });
     res.json(session);
 });
 
-router.get('/sessions', (req: Request, res: Response) => {
-    const sessions = ops.getWorkSessions(getUserId(req), Number(req.query.limit) || 50);
+router.get('/sessions', async (req: Request, res: Response) => {
+    const sessions = await ops.getWorkSessions((req as AuthRequest).userId, Number(req.query.limit) || 50);
     res.json(sessions);
 });
 
 // ─── Daily Plans ───
 
-router.get('/plans/:date', (req: Request, res: Response) => {
-    const plan = ops.getDailyPlan(getUserId(req), req.params.date as string);
+router.get('/plans/:date', async (req: Request, res: Response) => {
+    const plan = await ops.getDailyPlan((req as AuthRequest).userId, req.params.date as string);
     res.json(plan || { date: req.params.date, task_order: [], notes: '' });
 });
 
-router.put('/plans/:date', (req: Request, res: Response) => {
-    const plan = ops.upsertDailyPlan(getUserId(req), req.params.date as string, req.body);
+router.put('/plans/:date', async (req: Request, res: Response) => {
+    const plan = await ops.upsertDailyPlan((req as AuthRequest).userId, req.params.date as string, req.body);
     res.json(plan);
 });
 
 // ─── AI Planning ───
 
-router.post('/ai/plan', (req: Request, res: Response) => {
-    const userId = getUserId(req);
+router.post('/ai/plan', async (req: Request, res: Response) => {
+    const userId = (req as AuthRequest).userId;
     const date = req.body.date || new Date().toISOString().split('T')[0];
     const availableMinutes = req.body.available_minutes || 480;
-    const plan = generateDailyPlan(userId, date, availableMinutes);
+    const plan = await generateDailyPlan(userId, date, availableMinutes);
 
-    // Save plan
-    ops.upsertDailyPlan(userId, date, {
+    await ops.upsertDailyPlan(userId, date, {
         task_order: plan.suggestions.map(s => s.task_id),
         planned_minutes: plan.total_minutes,
     });
@@ -162,21 +169,21 @@ router.post('/ai/plan', (req: Request, res: Response) => {
     res.json(plan);
 });
 
-router.get('/ai/suggestions', (req: Request, res: Response) => {
-    const suggestions = suggestNextActions(getUserId(req), Number(req.query.count) || 3);
+router.get('/ai/suggestions', async (req: Request, res: Response) => {
+    const suggestions = await suggestNextActions((req as AuthRequest).userId, Number(req.query.count) || 3);
     res.json(suggestions);
 });
 
-router.get('/ai/patterns', (req: Request, res: Response) => {
-    const patterns = analyzePatterns(getUserId(req));
+router.get('/ai/patterns', async (req: Request, res: Response) => {
+    const patterns = await analyzePatterns((req as AuthRequest).userId);
     res.json(patterns);
 });
 
 // ─── AI Chat ───
 
-router.post('/ai/chat', async (req: Request, res: Response) => {
+router.post('/ai/chat', aiLimiter, async (req: Request, res: Response) => {
     try {
-        const userId = getUserId(req);
+        const userId = (req as AuthRequest).userId;
         const { message, conversation_id } = req.body;
         if (!message || typeof message !== 'string') {
             return res.status(400).json({ error: 'Message is required' });
@@ -189,20 +196,20 @@ router.post('/ai/chat', async (req: Request, res: Response) => {
     }
 });
 
-router.get('/ai/conversations', (req: Request, res: Response) => {
-    const conversations = ops.getRecentConversations(getUserId(req));
+router.get('/ai/conversations', async (req: Request, res: Response) => {
+    const conversations = await ops.getRecentConversations((req as AuthRequest).userId);
     res.json(conversations);
 });
 
 // ─── Analytics ───
 
-router.get('/stats', (req: Request, res: Response) => {
-    const stats = ops.getUserStats(getUserId(req));
+router.get('/stats', async (req: Request, res: Response) => {
+    const stats = await ops.getUserStats((req as AuthRequest).userId);
     res.json(stats);
 });
 
-router.get('/activity', (req: Request, res: Response) => {
-    const log = ops.getActivityLog(getUserId(req), Number(req.query.limit) || 100);
+router.get('/activity', async (req: Request, res: Response) => {
+    const log = await ops.getActivityLog((req as AuthRequest).userId, Number(req.query.limit) || 100);
     res.json(log);
 });
 

@@ -1,14 +1,38 @@
 const API_BASE = '/api';
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+let accessToken: string | null = localStorage.getItem('flowstate_access_token');
+
+function setAccessToken(token: string | null) {
+    accessToken = token;
+    if (token) localStorage.setItem('flowstate_access_token', token);
+    else localStorage.removeItem('flowstate_access_token');
+}
+
+async function request<T>(path: string, options?: RequestInit, retry = true): Promise<T> {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options?.headers as Record<string, string> || {}),
+    };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
     const res = await fetch(`${API_BASE}${path}`, {
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Id': 'default-user',
-            ...options?.headers,
-        },
+        credentials: 'include',
         ...options,
+        headers,
     });
+
+    if (res.status === 401 && retry) {
+        try {
+            const refreshed = await refreshToken();
+            if (refreshed?.accessToken) {
+                setAccessToken(refreshed.accessToken);
+                return request<T>(path, options, false);
+            }
+        } catch {
+            setAccessToken(null);
+        }
+    }
+
     if (!res.ok) {
         const error = await res.json().catch(() => ({ error: 'Request failed' }));
         throw new Error(error.error || `HTTP ${res.status}`);
@@ -16,17 +40,58 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     return res.json();
 }
 
-// User
+// ─── Auth ───
+
+export async function signup(name: string, email: string, password: string) {
+    const res = await request<any>('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password }),
+    }, false);
+    if (res.accessToken) setAccessToken(res.accessToken);
+    return res;
+}
+
+export async function login(email: string, password: string) {
+    const res = await request<any>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+    }, false);
+    if (res.accessToken) setAccessToken(res.accessToken);
+    return res;
+}
+
+export async function logout() {
+    try { await request('/auth/logout', { method: 'POST' }, false); }
+    finally { setAccessToken(null); }
+}
+
+export async function refreshToken() {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error('Unable to refresh token');
+    const data = await res.json();
+    if (data.accessToken) setAccessToken(data.accessToken);
+    return data;
+}
+
+export const getMe = () => request<any>('/auth/me');
+export const updateProfile = (name: string) => request<any>('/auth/profile', { method: 'PUT', body: JSON.stringify({ name }) });
+export const forgotPassword = (email: string) => request<any>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }, false);
+export const resetPassword = (token: string, password: string) => request<any>('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }, false);
+
+// ─── Existing App API ───
+
 export const getUser = () => request<any>('/user');
 export const updateSettings = (settings: any) => request('/user/settings', { method: 'PUT', body: JSON.stringify(settings) });
 
-// Goals
 export const getGoals = (status?: string) => request<any[]>(`/goals${status ? `?status=${status}` : ''}`);
 export const createGoal = (data: any) => request<any>('/goals', { method: 'POST', body: JSON.stringify(data) });
 export const updateGoal = (id: string, data: any) => request<any>(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteGoal = (id: string) => request(`/goals/${id}`, { method: 'DELETE' });
 
-// Projects
 export const getProjects = (goalId?: string, status?: string) => {
     const params = new URLSearchParams();
     if (goalId) params.set('goal_id', goalId);
@@ -38,7 +103,6 @@ export const createProject = (data: any) => request<any>('/projects', { method: 
 export const updateProject = (id: string, data: any) => request<any>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteProject = (id: string) => request(`/projects/${id}`, { method: 'DELETE' });
 
-// Tasks
 export const getTasks = (filters?: Record<string, string>) => {
     const params = new URLSearchParams();
     if (filters) Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v); });
@@ -49,16 +113,13 @@ export const createTask = (data: any) => request<any>('/tasks', { method: 'POST'
 export const updateTask = (id: string, data: any) => request<any>(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteTask = (id: string) => request(`/tasks/${id}`, { method: 'DELETE' });
 
-// Work Sessions
 export const startSession = (taskId?: string) => request<any>('/sessions/start', { method: 'POST', body: JSON.stringify({ task_id: taskId }) });
 export const endSession = (id: string, data?: any) => request<any>(`/sessions/${id}/end`, { method: 'POST', body: JSON.stringify(data || {}) });
 export const getSessions = (limit?: number) => request<any[]>(`/sessions${limit ? `?limit=${limit}` : ''}`);
 
-// Daily Plans
 export const getDailyPlan = (date: string) => request<any>(`/plans/${date}`);
 export const updateDailyPlan = (date: string, data: any) => request<any>(`/plans/${date}`, { method: 'PUT', body: JSON.stringify(data) });
 
-// AI
 export const generatePlan = (date?: string, availableMinutes?: number) =>
     request<any>('/ai/plan', { method: 'POST', body: JSON.stringify({ date, available_minutes: availableMinutes }) });
 export const getSuggestions = (count?: number) => request<any[]>(`/ai/suggestions${count ? `?count=${count}` : ''}`);
@@ -66,6 +127,17 @@ export const getPatterns = () => request<any>('/ai/patterns');
 export const chatWithAI = (message: string, conversationId?: string) =>
     request<any>('/ai/chat', { method: 'POST', body: JSON.stringify({ message, conversation_id: conversationId }) });
 
-// Analytics
 export const getStats = () => request<any>('/stats');
 export const getActivity = (limit?: number) => request<any[]>(`/activity${limit ? `?limit=${limit}` : ''}`);
+
+// ─── Billing ───
+
+export const getBillingPlans = () => request<any[]>('/billing/plans', { method: 'GET' }, false);
+export const createCheckoutSession = () => request<any>('/billing/checkout', { method: 'POST' });
+export const createBillingPortalSession = () => request<any>('/billing/portal', { method: 'POST' });
+
+// ─── Admin ───
+
+export const getAdminStats = () => request<any>('/admin/stats');
+export const getAdminUsers = (page = 1) => request<any>(`/admin/users?page=${page}`);
+export const updateAdminUser = (id: string, data: any) => request<any>(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,7 +10,7 @@
     }
 
     body {
-        @apply bg-surface-50 text-surface-900;
+        @apply bg-surface-50 text-surface-900 antialiased;
         font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     }
 
@@ -54,12 +56,25 @@
         @apply card transition-shadow hover:shadow-md;
     }
 
+    .card-glow {
+        @apply bg-surface-900/70 backdrop-blur-xl border border-surface-700/70;
+        box-shadow: 0 22px 80px -38px rgba(59, 91, 219, 0.65);
+    }
+
+    .gradient-text {
+        @apply bg-gradient-to-r from-primary-200 via-primary-300 to-primary-400 bg-clip-text text-transparent;
+    }
+
     .input {
         @apply w-full rounded-lg border border-surface-300 bg-surface-0 px-3 py-2 text-sm placeholder:text-surface-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors;
     }
 
     .input-lg {
         @apply input px-4 py-3 text-base;
+    }
+
+    .input-field {
+        @apply w-full rounded-xl border border-surface-700 bg-surface-900/80 px-3 py-2.5 text-surface-50 placeholder:text-surface-500 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/25 transition;
     }
 
     .label {

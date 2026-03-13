@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BarChart3, Clock, Flame, TrendingUp, Tag, Lightbulb } from 'lucide-react';
-import * as api from '../api';
+import * as api from '@/api';
 import { PatternAnalysis, UserStats } from '../types';
 
 export default function InsightsView() {
