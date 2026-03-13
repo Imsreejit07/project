@@ -1,0 +1,8 @@
+{
+    "typescript.tsdk": "client/node_modules/typescript/lib",
+    "css.validate": false,
+    "scss.validate": false,
+    "less.validate": false,
+    "editor.formatOnSave": true,
+    "typescript.preferences.importModuleSpecifier": "relative"
+}
