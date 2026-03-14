@@ -1,7 +1,27 @@
 import { useApp } from '../context/AppContext';
 import { Target, ListTodo, CalendarDays, AlertTriangle, TrendingUp, Clock, Plus, Zap, ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import * as api from '@/api';
+
+const staggerContainer: Variants = {
+    hidden: {},
+    show: {
+        transition: {
+            staggerChildren: 0.08,
+        },
+    },
+};
+
+const slideUpItem: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    show: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
+    },
+};
 
 export default function Dashboard() {
     const { state, dispatch, actions } = useApp();
@@ -46,7 +66,12 @@ export default function Dashboard() {
 
             {/* Quick Stats */}
             {stats && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <motion.div
+                    className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                    variants={staggerContainer}
+                    initial="hidden"
+                    animate="show"
+                >
                     <StatCard icon={ListTodo} label="Pending" value={stats.pendingTasks} color="text-primary-600" bg="bg-primary-50" />
                     <StatCard icon={Target} label="Active Goals" value={stats.activeGoals} color="text-accent" bg="bg-accent-light" />
                     <StatCard icon={TrendingUp} label="Completion" value={`${stats.completionRate}%`} color="text-success" bg="bg-success-light" />
@@ -57,7 +82,7 @@ export default function Dashboard() {
                         color={stats.overdueTasks > 0 ? 'text-danger' : 'text-surface-400'}
                         bg={stats.overdueTasks > 0 ? 'bg-danger-light' : 'bg-surface-100'}
                     />
-                </div>
+                </motion.div>
             )}
 
             {/* Main content grid */}
@@ -147,11 +172,16 @@ export default function Dashboard() {
                                 </button>
                             </div>
                         ) : (
-                            <div className="space-y-2">
+                            <motion.div
+                                className="space-y-2"
+                                variants={staggerContainer}
+                                initial="hidden"
+                                animate="show"
+                            >
                                 {todayTasks.map(task => (
                                     <TaskRow key={task.id} task={task} onComplete={() => actions.completeTask(task.id)} />
                                 ))}
-                            </div>
+                            </motion.div>
                         )}
                     </div>
                 </div>
@@ -237,7 +267,7 @@ function StatCard({ icon: Icon, label, value, color, bg }: {
     icon: any; label: string; value: string | number; color: string; bg: string;
 }) {
     return (
-        <div className="card p-4">
+        <motion.div className="card p-4" variants={slideUpItem}>
             <div className="flex items-center gap-3">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${bg}`}>
                     <Icon className={`h-5 w-5 ${color}`} />
@@ -247,13 +277,16 @@ function StatCard({ icon: Icon, label, value, color, bg }: {
                     <div className="text-xs text-surface-500">{label}</div>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 }
 
 function TaskRow({ task, onComplete }: { task: any; onComplete: () => void }) {
     return (
-        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-50 transition-colors group">
+        <motion.div
+            className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-50 transition-colors group"
+            variants={slideUpItem}
+        >
             <button
                 onClick={onComplete}
                 className={`flex h-5 w-5 items-center justify-center rounded-full border-2 flex-shrink-0 transition-colors
@@ -277,7 +310,7 @@ function TaskRow({ task, onComplete }: { task: any; onComplete: () => void }) {
                 </div>
             </div>
             <span className="text-xs text-surface-400">{task.estimated_minutes}m</span>
-        </div>
+        </motion.div>
     );
 }
 

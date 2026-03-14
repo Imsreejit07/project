@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Task } from '../types';
 import { ListTodo, Plus, Check, Clock, Zap, Filter, ChevronDown, Trash2, Edit2, Calendar, Target, FolderOpen } from 'lucide-react';
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 
 type FilterState = {
     status: string;
@@ -121,84 +122,94 @@ export default function TasksView() {
                     </button>
                 </div>
             ) : (
-                <div className="space-y-2">
-                    {/* In Progress section */}
-                    {inProgress.length > 0 && filters.status === 'active' && (
-                        <div className="mb-4">
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-600 mb-2 px-1">
-                                In Progress ({inProgress.length})
-                            </h3>
-                            {inProgress.map(task => (
-                                <TaskCard
-                                    key={task.id}
-                                    task={task}
-                                    goals={state.goals}
-                                    projects={state.projects}
-                                    editingId={editingId}
-                                    editTitle={editTitle}
-                                    onStartEdit={(id, title) => { setEditingId(id); setEditTitle(title); }}
-                                    onSaveEdit={async (id) => {
-                                        if (editTitle.trim()) await actions.updateTask(id, { title: editTitle });
-                                        setEditingId(null);
-                                    }}
-                                    onEditTitleChange={setEditTitle}
-                                    onComplete={() => actions.completeTask(task.id)}
-                                    onDelete={() => actions.deleteTask(task.id)}
-                                    onUpdateStatus={(status) => actions.updateTask(task.id, { status })}
-                                />
-                            ))}
-                        </div>
-                    )}
+                <LayoutGroup>
+                    <motion.div className="space-y-2" layout>
+                        {/* In Progress section */}
+                        {inProgress.length > 0 && filters.status === 'active' && (
+                            <motion.div className="mb-4" layout>
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-600 mb-2 px-1">
+                                    In Progress ({inProgress.length})
+                                </h3>
+                                <AnimatePresence mode="popLayout" initial={false}>
+                                    {inProgress.map(task => (
+                                        <TaskCard
+                                            key={task.id}
+                                            task={task}
+                                            goals={state.goals}
+                                            projects={state.projects}
+                                            editingId={editingId}
+                                            editTitle={editTitle}
+                                            onStartEdit={(id, title) => { setEditingId(id); setEditTitle(title); }}
+                                            onSaveEdit={async (id) => {
+                                                if (editTitle.trim()) await actions.updateTask(id, { title: editTitle });
+                                                setEditingId(null);
+                                            }}
+                                            onEditTitleChange={setEditTitle}
+                                            onComplete={() => actions.completeTask(task.id)}
+                                            onDelete={() => actions.deleteTask(task.id)}
+                                            onUpdateStatus={(status) => actions.updateTask(task.id, { status })}
+                                        />
+                                    ))}
+                                </AnimatePresence>
+                            </motion.div>
+                        )}
 
-                    {/* Pending section */}
-                    {pending.length > 0 && filters.status === 'active' && (
-                        <div>
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-2 px-1">
-                                Pending ({pending.length})
-                            </h3>
-                            {pending.map(task => (
-                                <TaskCard
-                                    key={task.id}
-                                    task={task}
-                                    goals={state.goals}
-                                    projects={state.projects}
-                                    editingId={editingId}
-                                    editTitle={editTitle}
-                                    onStartEdit={(id, title) => { setEditingId(id); setEditTitle(title); }}
-                                    onSaveEdit={async (id) => {
-                                        if (editTitle.trim()) await actions.updateTask(id, { title: editTitle });
-                                        setEditingId(null);
-                                    }}
-                                    onEditTitleChange={setEditTitle}
-                                    onComplete={() => actions.completeTask(task.id)}
-                                    onDelete={() => actions.deleteTask(task.id)}
-                                    onUpdateStatus={(status) => actions.updateTask(task.id, { status })}
-                                />
-                            ))}
-                        </div>
-                    )}
+                        {/* Pending section */}
+                        {pending.length > 0 && filters.status === 'active' && (
+                            <motion.div layout>
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-2 px-1">
+                                    Pending ({pending.length})
+                                </h3>
+                                <AnimatePresence mode="popLayout" initial={false}>
+                                    {pending.map(task => (
+                                        <TaskCard
+                                            key={task.id}
+                                            task={task}
+                                            goals={state.goals}
+                                            projects={state.projects}
+                                            editingId={editingId}
+                                            editTitle={editTitle}
+                                            onStartEdit={(id, title) => { setEditingId(id); setEditTitle(title); }}
+                                            onSaveEdit={async (id) => {
+                                                if (editTitle.trim()) await actions.updateTask(id, { title: editTitle });
+                                                setEditingId(null);
+                                            }}
+                                            onEditTitleChange={setEditTitle}
+                                            onComplete={() => actions.completeTask(task.id)}
+                                            onDelete={() => actions.deleteTask(task.id)}
+                                            onUpdateStatus={(status) => actions.updateTask(task.id, { status })}
+                                        />
+                                    ))}
+                                </AnimatePresence>
+                            </motion.div>
+                        )}
 
-                    {/* Non-active filters show all in one list */}
-                    {filters.status !== 'active' && tasks.map(task => (
-                        <TaskCard
-                            key={task.id}
-                            task={task}
-                            goals={state.goals}
-                            projects={state.projects}
-                            editingId={editingId}
-                            editTitle={editTitle}
-                            onStartEdit={(id, title) => { setEditingId(id); setEditTitle(title); }}
-                            onSaveEdit={async (id) => {
-                                if (editTitle.trim()) await actions.updateTask(id, { title: editTitle });
-                                setEditingId(null);
-                            }}
-                            onEditTitleChange={setEditTitle}
-                            onComplete={() => actions.completeTask(task.id)}
-                            onDelete={() => actions.deleteTask(task.id)}
-                            onUpdateStatus={(status) => actions.updateTask(task.id, { status })}
-                        />
-                    ))}
-                </div>
+                        {/* Non-active filters show all in one list */}
+                        {filters.status !== 'active' && (
+                            <AnimatePresence mode="popLayout" initial={false}>
+                                {tasks.map(task => (
+                                    <TaskCard
+                                        key={task.id}
+                                        task={task}
+                                        goals={state.goals}
+                                        projects={state.projects}
+                                        editingId={editingId}
+                                        editTitle={editTitle}
+                                        onStartEdit={(id, title) => { setEditingId(id); setEditTitle(title); }}
+                                        onSaveEdit={async (id) => {
+                                            if (editTitle.trim()) await actions.updateTask(id, { title: editTitle });
+                                            setEditingId(null);
+                                        }}
+                                        onEditTitleChange={setEditTitle}
+                                        onComplete={() => actions.completeTask(task.id)}
+                                        onDelete={() => actions.deleteTask(task.id)}
+                                        onUpdateStatus={(status) => actions.updateTask(task.id, { status })}
+                                    />
+                                ))}
+                            </AnimatePresence>
+                        )}
+                    </motion.div>
+                </LayoutGroup>
             )}
         </div>
     );
@@ -220,7 +231,13 @@ function TaskCard({ task, goals, projects, editingId, editTitle, onStartEdit, on
     const isOverdue = task.due_date && task.due_date < today && task.status !== 'completed';
 
     return (
-        <div className={`card p-4 mb-2 group transition-all
+        <motion.div
+            layout
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ layout: { type: 'spring', stiffness: 420, damping: 34 }, duration: 0.2 }}
+            className={`card p-4 mb-2 group transition-all
       ${task.status === 'in_progress' ? 'border-primary-300 bg-primary-50/30' : ''}
       ${task.status === 'completed' ? 'opacity-60' : ''}
       ${isOverdue ? 'border-danger/30' : ''}
@@ -304,7 +321,7 @@ function TaskCard({ task, goals, projects, editingId, editTitle, onStartEdit, on
                     </button>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 }
 

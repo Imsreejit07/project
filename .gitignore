@@ -6,3 +6,4 @@ client/.env.local
 *.db
 *.db-wal
 *.db-shm
+.aider*
