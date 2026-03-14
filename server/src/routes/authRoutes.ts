@@ -13,6 +13,45 @@ import { authLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
+type SupabaseUserResponse = {
+    id: string;
+    email: string;
+    user_metadata?: {
+        name?: string;
+        full_name?: string;
+    };
+};
+
+async function fetchSupabaseUser(accessToken: string): Promise<SupabaseUserResponse> {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set on the server');
+    }
+
+    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        method: 'GET',
+        headers: {
+            apikey: supabaseAnonKey,
+            Authorization: `Bearer ${accessToken}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error('Invalid Supabase token');
+    }
+
+    return response.json() as Promise<SupabaseUserResponse>;
+}
+
+function deriveDisplayName(email: string, metadata?: SupabaseUserResponse['user_metadata']): string {
+    const preferred = metadata?.full_name?.trim() || metadata?.name?.trim();
+    if (preferred) return preferred;
+    const localPart = email.split('@')[0] || 'User';
+    return localPart.slice(0, 60);
+}
+
 // POST /api/auth/signup
 router.post('/signup', authLimiter, async (req: Request, res: Response) => {
     try {
@@ -118,6 +157,71 @@ router.post('/logout', async (req: Request, res: Response) => {
     res.json({ success: true });
 });
 
+// POST /api/auth/supabase/exchange
+router.post('/supabase/exchange', async (req: Request, res: Response) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Supabase access token required' });
+        }
+
+        const supabaseAccessToken = authHeader.substring(7);
+        const { name: requestedName, password: requestedPassword } = req.body || {};
+        const supabaseUser = await fetchSupabaseUser(supabaseAccessToken);
+
+        if (!supabaseUser.email) {
+            return res.status(400).json({ error: 'Supabase user has no email' });
+        }
+
+        const pool = getPool();
+        const email = supabaseUser.email.toLowerCase();
+        let user = (
+            await pool.query(
+                'SELECT id, name, email, plan, role FROM users WHERE email = $1',
+                [email]
+            )
+        ).rows[0];
+
+        if (!user) {
+            const name = (typeof requestedName === 'string' && requestedName.trim())
+                ? requestedName.trim()
+                : deriveDisplayName(email, supabaseUser.user_metadata);
+
+            if (typeof requestedPassword !== 'string' || requestedPassword.length < 8) {
+                return res.status(400).json({ error: 'Password must be at least 8 characters for new accounts' });
+            }
+
+            const passwordHash = await hashPassword(requestedPassword);
+            const inserted = await pool.query(
+                `INSERT INTO users (name, email, password_hash, email_verified)
+                 VALUES ($1, $2, $3, TRUE)
+                 RETURNING id, name, email, plan, role`,
+                [name, email, passwordHash]
+            );
+            user = inserted.rows[0];
+
+            sendWelcomeEmail(user.email, user.name).catch(console.error);
+        }
+
+        const accessToken = generateAccessToken(user.id);
+        const refreshToken = generateRefreshToken();
+        await saveRefreshToken(user.id, refreshToken);
+
+        res.cookie('refresh_token', refreshToken, {
+            httpOnly: true,
+            path: '/api/auth',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 3600 * 1000,
+            secure: process.env.NODE_ENV === 'production',
+        });
+
+        return res.json({ accessToken, user });
+    } catch (err) {
+        console.error('Supabase exchange error:', err);
+        return res.status(401).json({ error: 'Failed to exchange Supabase session' });
+    }
+});
+
 // GET /api/auth/me
 router.get('/me', requireAuth, async (req: Request, res: Response) => {
     try {
@@ -199,5 +303,11 @@ router.post('/reset-password', async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to reset password' });
     }
 });
+
+
+
+
+
+
 
 export default router;

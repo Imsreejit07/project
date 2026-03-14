@@ -1,9 +1,10 @@
 import { useApp } from '../context/AppContext';
 import {
     LayoutDashboard, Target, ListTodo, CalendarDays, BarChart3,
-    Plus, ChevronDown, ChevronRight
+    Plus, ChevronDown, ChevronRight, LogOut
 } from 'lucide-react';
 import { useState } from 'react';
+import * as api from '../api';
 
 const NAV_ITEMS = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
@@ -16,8 +17,18 @@ const NAV_ITEMS = [
 export default function Sidebar() {
     const { state, dispatch, actions } = useApp();
     const [expandGoals, setExpandGoals] = useState(true);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     const activeGoals = state.goals.filter(g => g.status === 'active');
+
+    const handleLogoutConfirm = async () => {
+        try {
+            await api.logout();
+        } finally {
+            // Reload page to reset app state
+            window.location.href = '/';
+        }
+    };
 
     return (
         <aside className="hidden lg:flex w-64 flex-col border-r border-surface-200 bg-surface-0">
@@ -119,6 +130,45 @@ export default function Sidebar() {
                         <div className="rounded-lg bg-surface-50 px-2 py-1.5">
                             <div className="text-lg font-semibold text-surface-700">{state.stats.pendingTasks}</div>
                             <div className="text-[10px] text-surface-500 uppercase tracking-wider">Pending</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Logout button */}
+            <div className="border-t border-surface-200 px-4 py-3">
+                <button
+                    onClick={() => setShowLogoutConfirm(true)}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-100 px-4 py-2 text-sm font-medium text-surface-700 hover:bg-surface-200 transition-colors"
+                >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                </button>
+            </div>
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="w-96 rounded-2xl bg-surface-0 p-6 shadow-2xl border border-surface-200">
+                        <div className="mb-4">
+                            <h2 className="text-xl font-bold text-surface-900">Logout Confirmation</h2>
+                            <p className="mt-2 text-sm text-surface-600">
+                                Are you sure you want to logout? You'll need to sign in again to access your tasks.
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowLogoutConfirm(false)}
+                                className="flex-1 rounded-lg bg-surface-100 px-4 py-2.5 text-sm font-medium text-surface-700 hover:bg-surface-200 transition-colors"
+                            >
+                                No, Keep me logged in
+                            </button>
+                            <button
+                                onClick={handleLogoutConfirm}
+                                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                            >
+                                Yes, Logout
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -1,14 +1,27 @@
-const FROM_EMAIL = process.env.FROM_EMAIL || 'FlowState <noreply@flowstate.app>';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'FlowState <onboarding@resend.dev>';
 const APP_URL = process.env.CLIENT_URL || 'https://flowstate.app';
 
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-    if (!process.env.RESEND_API_KEY) {
-        console.log(`[Email] ${subject} → ${to} (RESEND_API_KEY not set, skipping)`);
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey || apiKey === 'your_resend_key_here') {
+        console.log(`[Email] ${subject} → ${to} (RESEND_API_KEY not configured, skipping)`);
         return;
     }
-    const { Resend } = await import('resend');
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({ from: FROM_EMAIL, to, subject, html });
+
+    try {
+        const { Resend } = await import('resend');
+        const resend = new Resend(apiKey);
+        const response = await resend.emails.send({ from: FROM_EMAIL, to, subject, html });
+        if (response.error) {
+            console.error(`[Email] ✗ Resend API error for ${to}:`, response.error);
+            throw new Error(`Resend API error: ${JSON.stringify(response.error)}`);
+        }
+        console.log(`[Email] ✓ ${subject} → ${to} (ID: ${response.data?.id})`);
+    } catch (err) {
+        console.error(`[Email] ✗ Failed to send to ${to}:`, err instanceof Error ? err.message : err);
+        throw new Error(`Failed to send email to ${to}`);
+    }
 }
 
 export async function sendWelcomeEmail(email: string, name: string): Promise<void> {
@@ -60,3 +73,5 @@ export async function sendProUpgradeEmail(email: string, name: string): Promise<
         </div>
     `);
 }
+
+

@@ -1,11 +1,13 @@
-const API_BASE = '/api';
+import { hasSupabaseConfig, supabase } from './lib/supabase';
 
-let accessToken: string | null = localStorage.getItem('flowstate_access_token');
+const API_BASE = 'http://localhost:3001/api';
+
+let accessToken: string | null = localStorage.getItem('flowstate_token');
 
 function setAccessToken(token: string | null) {
     accessToken = token;
-    if (token) localStorage.setItem('flowstate_access_token', token);
-    else localStorage.removeItem('flowstate_access_token');
+    if (token) localStorage.setItem('flowstate_token', token);
+    else localStorage.removeItem('flowstate_token');
 }
 
 async function request<T>(path: string, options?: RequestInit, retry = true): Promise<T> {
@@ -61,8 +63,13 @@ export async function login(email: string, password: string) {
 }
 
 export async function logout() {
-    try { await request('/auth/logout', { method: 'POST' }, false); }
-    finally { setAccessToken(null); }
+    try {
+        await request('/auth/logout', { method: 'POST' }, false);
+    } finally {
+        // Important: clear Supabase session too, otherwise AuthGate auto-restores login.
+        await supabase.auth.signOut().catch(() => { });
+        setAccessToken(null);
+    }
 }
 
 export async function refreshToken() {
@@ -81,6 +88,62 @@ export const getMe = () => request<any>('/auth/me');
 export const updateProfile = (name: string) => request<any>('/auth/profile', { method: 'PUT', body: JSON.stringify({ name }) });
 export const forgotPassword = (email: string) => request<any>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }, false);
 export const resetPassword = (token: string, password: string) => request<any>('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }, false);
+
+// Supabase OTP Authentication
+export const sendCode = async (email: string, name?: string) => {
+    if (!hasSupabaseConfig) {
+        throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in client/.env.local and restart the client.');
+    }
+    const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: name?.trim() ? { data: { full_name: name.trim() } } : undefined,
+    });
+    if (error) throw new Error(error.message);
+    return data;
+};
+
+export const verifyCode = async (email: string, code: string) => {
+    if (!hasSupabaseConfig) {
+        throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in client/.env.local and restart the client.');
+    }
+    try {
+        const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token: code,
+            type: 'email',
+        });
+        if (error) {
+            throw new Error('Invalid OTP entered');
+        }
+        return data;
+    } catch {
+        throw new Error('Invalid OTP entered');
+    }
+};
+
+export const exchangeSupabaseSession = async (
+    supabaseAccessToken: string,
+    signupData?: { name?: string; password?: string }
+) => {
+    const res = await fetch(`${API_BASE}/auth/supabase/exchange`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Authorization': `Bearer ${supabaseAccessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signupData || {}),
+    });
+
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to exchange Supabase session' }));
+        throw new Error(error.error || 'Failed to exchange Supabase session');
+    }
+
+    const data = await res.json();
+    if (data.accessToken) setAccessToken(data.accessToken);
+    return data;
+};
 
 // ─── Existing App API ───
 
