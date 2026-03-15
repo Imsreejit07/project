@@ -36,7 +36,7 @@ export default function CreateProjectModal() {
         <ModalBackdrop onClose={() => dispatch({ type: 'TOGGLE_CREATE_PROJECT' })}>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-lg font-semibold text-surface-900">New Project</h2>
+                    <h2 className="text-lg font-semibold text-surface-900 tracking-tight">New Project</h2>
                     <button type="button" onClick={() => dispatch({ type: 'TOGGLE_CREATE_PROJECT' })} className="btn-icon btn-ghost">
                         <X className="h-4 w-4" />
                     </button>

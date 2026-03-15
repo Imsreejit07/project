@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,38 +6,42 @@
 
 @layer base {
     * {
-        @apply border-surface-200;
+        @apply border-white/[0.06];
     }
 
     body {
-        @apply bg-surface-50 text-surface-900 antialiased;
+        @apply bg-[#020203] text-surface-900 antialiased;
         font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     }
 
     ::selection {
-        @apply bg-primary-200 text-primary-900;
+        @apply bg-primary-500/30 text-white;
+    }
+
+    h1, h2, h3 {
+        letter-spacing: -0.05em;
     }
 }
 
 @layer components {
     .btn {
-        @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 transform-gpu hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#020203] disabled:opacity-50 disabled:cursor-not-allowed;
     }
 
     .btn-primary {
-        @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm;
+        @apply btn bg-gradient-to-r from-primary-600 to-primary-500 text-white hover:from-primary-500 hover:to-primary-400 focus:ring-primary-500 shadow-[0_0_20px_rgba(139,92,246,0.3)];
     }
 
     .btn-secondary {
-        @apply btn bg-surface-0 text-surface-700 border border-surface-300 hover:bg-surface-100 focus:ring-primary-500;
+        @apply btn bg-white/5 text-surface-700 border border-white/10 hover:bg-white/10 hover:text-surface-800 focus:ring-primary-500;
     }
 
     .btn-ghost {
-        @apply btn text-surface-600 hover:text-surface-900 hover:bg-surface-100 focus:ring-primary-500;
+        @apply btn text-surface-600 hover:text-surface-800 hover:bg-white/5 focus:ring-primary-500;
     }
 
     .btn-danger {
-        @apply btn bg-danger text-white hover:bg-red-600 focus:ring-red-500;
+        @apply btn bg-danger/20 text-red-400 hover:bg-danger/30 focus:ring-red-500;
     }
 
     .btn-sm {
@@ -49,24 +53,24 @@
     }
 
     .card {
-        @apply bg-surface-0 rounded-xl border border-surface-200 shadow-sm transition-transform duration-150 transform-gpu hover:scale-105;
+        @apply bg-[#08080A] rounded-xl border border-white/[0.06] backdrop-blur-md transition-all duration-200;
     }
 
     .card-hover {
-        @apply card transition-shadow hover:shadow-md;
+        @apply card hover:border-white/10 hover:shadow-[0_0_30px_rgba(139,92,246,0.05)];
     }
 
     .card-glow {
-        @apply bg-surface-900/70 backdrop-blur-xl border border-surface-700/70;
-        box-shadow: 0 22px 80px -38px rgba(59, 91, 219, 0.65);
+        @apply bg-[#08080A]/80 backdrop-blur-xl border border-white/10;
+        box-shadow: 0 22px 80px -38px rgba(139, 92, 246, 0.35);
     }
 
     .gradient-text {
-        @apply bg-gradient-to-r from-primary-200 via-primary-300 to-primary-400 bg-clip-text text-transparent;
+        @apply bg-gradient-to-r from-primary-300 via-primary-400 to-primary-500 bg-clip-text text-transparent;
     }
 
     .input {
-        @apply w-full rounded-lg border border-surface-300 bg-surface-0 px-3 py-2 text-sm placeholder:text-surface-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors;
+        @apply w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-surface-800 placeholder:text-surface-500 focus:border-primary-500/50 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors;
     }
 
     .input-lg {
@@ -74,11 +78,11 @@
     }
 
     .input-field {
-        @apply w-full rounded-xl border border-surface-700 bg-surface-900/80 px-3 py-2.5 text-surface-50 placeholder:text-surface-500 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/25 transition;
+        @apply w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-surface-800 placeholder:text-surface-500 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/25 transition;
     }
 
     .label {
-        @apply block text-sm font-medium text-surface-700 mb-1;
+        @apply block text-sm font-medium text-surface-600 mb-1;
     }
 
     .badge {
@@ -86,30 +90,63 @@
     }
 
     .badge-primary {
-        @apply badge bg-primary-100 text-primary-700;
+        @apply badge bg-primary-500/15 text-primary-400;
     }
 
     .badge-success {
-        @apply badge bg-success-light text-green-700;
+        @apply badge bg-success-light text-green-400;
     }
 
     .badge-warning {
-        @apply badge bg-warning-light text-yellow-800;
+        @apply badge bg-warning-light text-yellow-400;
     }
 
     .badge-danger {
-        @apply badge bg-danger-light text-red-700;
+        @apply badge bg-danger-light text-red-400;
     }
 
     .badge-neutral {
-        @apply badge bg-surface-100 text-surface-600;
+        @apply badge bg-white/5 text-surface-600;
+    }
+
+    /* Shimmer button effect */
+    .shimmer-btn {
+        @apply relative overflow-hidden;
+    }
+    .shimmer-btn::after {
+        content: '';
+        @apply absolute inset-0 -translate-x-full;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+        animation: shimmer 2s linear infinite;
+    }
+
+    /* Breathing glow */
+    .breathing-glow {
+        animation: breathing 3s ease-in-out infinite;
+    }
+    /* Shimmer Skeleton effect */
+    .skeleton-shimmer {
+        @apply relative bg-white/5 overflow-hidden;
+    }
+    .skeleton-shimmer::after {
+        content: '';
+        @apply absolute inset-0 -translate-x-full;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.05) 20%,
+            rgba(255, 255, 255, 0.1) 50%,
+            rgba(255, 255, 255, 0.05) 80%,
+            transparent
+        );
+        animation: shimmer-skeleton 1.5s infinite linear;
     }
 }
 
 @layer utilities {
     .scrollbar-thin {
         scrollbar-width: thin;
-        scrollbar-color: theme('colors.surface.300') transparent;
+        scrollbar-color: rgba(255,255,255,0.1) transparent;
     }
 
     .scrollbar-thin::-webkit-scrollbar {
@@ -121,7 +158,11 @@
     }
 
     .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: theme('colors.surface.300');
+        background-color: rgba(255,255,255,0.1);
         border-radius: 3px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(255,255,255,0.2);
     }
 }

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CalendarDays, Sun, Cloud, Moon, Zap, Clock, RefreshCw, Check, Lightbulb } from 'lucide-react';
+import { motion } from 'framer-motion';
 import * as api from '@/api';
 import { DailyPlanResult } from '../types';
+import GlowCard from './GlowCard';
 
 export default function PlanView() {
     const { state, actions } = useApp();
@@ -32,8 +34,8 @@ export default function PlanView() {
 
     const slotConfig = {
         morning: { icon: Sun, label: 'Morning', color: 'text-warning', bg: 'bg-warning-light', timeRange: '8:00 AM - 12:00 PM' },
-        afternoon: { icon: Cloud, label: 'Afternoon', color: 'text-primary-500', bg: 'bg-primary-50', timeRange: '12:00 PM - 5:00 PM' },
-        evening: { icon: Moon, label: 'Evening', color: 'text-accent', bg: 'bg-accent-light', timeRange: '5:00 PM - 9:00 PM' },
+        afternoon: { icon: Cloud, label: 'Afternoon', color: 'text-primary-400', bg: 'bg-primary-500/15', timeRange: '12:00 PM - 5:00 PM' },
+        evening: { icon: Moon, label: 'Evening', color: 'text-primary-300', bg: 'bg-accent-light', timeRange: '5:00 PM - 9:00 PM' },
     };
 
     const groupBySlot = (suggestions: any[]) => {
@@ -45,10 +47,10 @@ export default function PlanView() {
     };
 
     return (
-        <div className="animate-fade-in space-y-6">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">Daily Plan</h1>
+                    <h1 className="text-2xl font-bold text-surface-900 tracking-tight">Daily Plan</h1>
                     <p className="text-surface-500 mt-1">{dayName}</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -64,60 +66,66 @@ export default function PlanView() {
                             ))}
                         </select>
                     </div>
-                    <button
+                    <motion.button
+                        whileHover={{ y: -2, boxShadow: '0 0 15px rgba(139,92,246,0.3)' }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={generatePlan}
                         disabled={loading}
                         className="btn-primary"
                     >
                         <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         {plan ? 'Regenerate' : 'Generate Plan'}
-                    </button>
+                    </motion.button>
                 </div>
             </div>
 
             {loading ? (
-                <div className="card p-12 text-center">
+                <GlowCard className="p-12 text-center">
                     <RefreshCw className="h-8 w-8 text-primary-400 mx-auto mb-3 animate-spin" />
                     <p className="text-surface-500">Analyzing your tasks and generating an optimized plan...</p>
-                </div>
+                </GlowCard>
             ) : !plan || plan.suggestions.length === 0 ? (
-                <div className="card p-12 text-center">
-                    <CalendarDays className="h-12 w-12 text-surface-300 mx-auto mb-4" />
+                <GlowCard className="p-12 text-center">
+                    <CalendarDays className="h-12 w-12 text-surface-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-surface-700 mb-2">No plan generated yet</h3>
                     <p className="text-sm text-surface-500 mb-4">
                         Add some tasks first, then generate a plan to organize your day.
                     </p>
-                    <button onClick={generatePlan} className="btn-primary">
+                    <motion.button
+                        whileHover={{ y: -2, boxShadow: '0 0 15px rgba(139,92,246,0.3)' }}
+                        onClick={generatePlan}
+                        className="btn-primary"
+                    >
                         Generate Plan
-                    </button>
-                </div>
+                    </motion.button>
+                </GlowCard>
             ) : (
                 <>
                     {/* Summary bar */}
-                    <div className="card p-4">
+                    <GlowCard className="p-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-6">
                                 <div>
-                                    <span className="text-2xl font-bold text-surface-900">{plan.suggestions.length}</span>
+                                    <span className="text-2xl font-bold text-surface-900 tracking-tight">{plan.suggestions.length}</span>
                                     <span className="text-sm text-surface-500 ml-1">tasks planned</span>
                                 </div>
-                                <div className="h-8 w-px bg-surface-200" />
+                                <div className="h-8 w-px bg-white/10" />
                                 <div>
-                                    <span className="text-2xl font-bold text-primary-600">
+                                    <span className="text-2xl font-bold text-primary-400 tracking-tight">
                                         {Math.round(plan.total_minutes / 60 * 10) / 10}
                                     </span>
                                     <span className="text-sm text-surface-500 ml-1">hours of work</span>
                                 </div>
-                                <div className="h-8 w-px bg-surface-200" />
+                                <div className="h-8 w-px bg-white/10" />
                                 <div>
-                                    <span className="text-2xl font-bold text-success">
+                                    <span className="text-2xl font-bold text-success tracking-tight">
                                         {Math.round((1 - plan.total_minutes / (availableHours * 60)) * 100)}%
                                     </span>
                                     <span className="text-sm text-surface-500 ml-1">buffer remaining</span>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </GlowCard>
 
                     {/* Time slots */}
                     <div className="space-y-6">
@@ -133,11 +141,11 @@ export default function PlanView() {
                                             <SlotIcon className={`h-4 w-4 ${config.color}`} />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-surface-900">{config.label}</h3>
-                                            <span className="text-xs text-surface-400">{config.timeRange}</span>
+                                            <h3 className="font-semibold text-surface-900 tracking-tight">{config.label}</h3>
+                                            <span className="text-xs text-surface-500">{config.timeRange}</span>
                                         </div>
                                         {tasks.length > 0 && (
-                                            <span className="text-xs text-surface-400 ml-auto">
+                                            <span className="text-xs text-surface-500 ml-auto">
                                                 {tasks.length} task{tasks.length > 1 ? 's' : ''} · {slotMinutes}min
                                             </span>
                                         )}
@@ -145,39 +153,42 @@ export default function PlanView() {
 
                                     {tasks.length === 0 ? (
                                         <div className="card p-4 border-dashed text-center">
-                                            <p className="text-sm text-surface-400">No tasks scheduled</p>
+                                            <p className="text-sm text-surface-500">No tasks scheduled</p>
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
                                             {tasks.map((task: any, i: number) => (
-                                                <div key={task.task_id} className="card p-4 hover:shadow-md transition-shadow">
+                                                <GlowCard key={task.task_id} className="p-4">
                                                     <div className="flex items-start gap-3">
-                                                        <button
+                                                        <motion.button
+                                                            whileTap={{ scale: 0.9 }}
                                                             onClick={() => actions.completeTask(task.task_id)}
-                                                            className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-surface-300 hover:border-success transition-colors flex-shrink-0"
+                                                            className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-surface-400 hover:border-success transition-colors flex-shrink-0"
                                                         >
-                                                        </button>
+                                                        </motion.button>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-medium text-surface-800">{task.title}</p>
                                                             <p className="text-xs text-surface-500 mt-1">{task.reason}</p>
                                                             <div className="flex items-center gap-3 mt-2">
-                                                                <span className="inline-flex items-center gap-1 text-xs text-surface-400">
+                                                                <span className="inline-flex items-center gap-1 text-xs text-surface-500">
                                                                     <Clock className="h-3 w-3" />
                                                                     {task.estimated_minutes}min
                                                                 </span>
-                                                                <span className="text-xs text-surface-300">
+                                                                <span className="text-xs text-surface-500">
                                                                     Score: {task.priority_score}
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        <button
+                                                        <motion.button
+                                                            whileHover={{ y: -2, boxShadow: '0 0 15px rgba(139,92,246,0.3)' }}
+                                                            whileTap={{ scale: 0.95 }}
                                                             onClick={() => actions.updateTask(task.task_id, { status: 'in_progress' })}
                                                             className="btn-sm btn-primary"
                                                         >
                                                             <Zap className="h-3 w-3" /> Start
-                                                        </button>
+                                                        </motion.button>
                                                     </div>
-                                                </div>
+                                                </GlowCard>
                                             ))}
                                         </div>
                                     )}
@@ -188,17 +199,17 @@ export default function PlanView() {
 
                     {/* Insights */}
                     {plan.insights.length > 0 && (
-                        <div className="card p-5 bg-primary-50/50 border-primary-200">
+                        <GlowCard className="p-5 border-primary-500/20">
                             <div className="flex items-center gap-2 mb-3">
-                                <Lightbulb className="h-4 w-4 text-primary-600" />
-                                <h3 className="font-semibold text-primary-900">Insights</h3>
+                                <Lightbulb className="h-4 w-4 text-primary-400" />
+                                <h3 className="font-semibold text-surface-900 tracking-tight">Insights</h3>
                             </div>
                             <div className="space-y-2">
                                 {plan.insights.map((insight, i) => (
-                                    <p key={i} className="text-sm text-primary-800">{insight}</p>
+                                    <p key={i} className="text-sm text-surface-700">{insight}</p>
                                 ))}
                             </div>
-                        </div>
+                        </GlowCard>
                     )}
                 </>
             )}

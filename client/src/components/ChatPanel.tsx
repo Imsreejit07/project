@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { X, Send, Bot, User, Sparkles, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function ChatPanel() {
     const { state, dispatch, actions } = useApp();
@@ -32,16 +33,22 @@ export default function ChatPanel() {
     ];
 
     return (
-        <div className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-surface-0 border-l border-surface-200 shadow-2xl z-50 flex flex-col animate-slide-up">
+        <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-[#0A0A0A] border-l border-white/5 shadow-2xl z-50 flex flex-col"
+        >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-surface-200 px-4 py-3">
+            <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
                 <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100">
-                        <Sparkles className="h-4 w-4 text-primary-600" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500/15">
+                        <Sparkles className="h-4 w-4 text-primary-400" />
                     </div>
                     <div>
                         <h3 className="text-sm font-semibold text-surface-900">FlowState AI</h3>
-                        <p className="text-[10px] text-surface-400">Your productivity assistant</p>
+                        <p className="text-[10px] text-surface-500">Your productivity assistant</p>
                     </div>
                 </div>
                 <button
@@ -56,7 +63,7 @@ export default function ChatPanel() {
             <div className="flex-1 overflow-auto scrollbar-thin p-4 space-y-4">
                 {state.chatMessages.length === 0 ? (
                     <div className="text-center py-8">
-                        <Bot className="h-10 w-10 text-surface-300 mx-auto mb-3" />
+                        <Bot className="h-10 w-10 text-surface-400 mx-auto mb-3" />
                         <p className="text-sm text-surface-500 mb-4">
                             I can help you plan your day, organize tasks, and optimize your workflow.
                         </p>
@@ -68,7 +75,7 @@ export default function ChatPanel() {
                                         setInput(action.message);
                                         actions.sendMessage(action.message);
                                     }}
-                                    className="block w-full text-left px-3 py-2 rounded-lg bg-surface-50 hover:bg-surface-100 text-sm text-surface-600 transition-colors"
+                                    className="block w-full text-left px-3 py-2 rounded-lg bg-white/5 hover:bg-white/[0.07] text-sm text-surface-600 transition-colors"
                                 >
                                     {action.label}
                                 </button>
@@ -79,19 +86,19 @@ export default function ChatPanel() {
                     state.chatMessages.map((msg, i) => (
                         <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             {msg.role === 'assistant' && (
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 flex-shrink-0 mt-0.5">
-                                    <Bot className="h-3.5 w-3.5 text-primary-600" />
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-500/15 flex-shrink-0 mt-0.5">
+                                    <Bot className="h-3.5 w-3.5 text-primary-400" />
                                 </div>
                             )}
                             <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm leading-relaxed
                 ${msg.role === 'user'
                                     ? 'bg-primary-600 text-white rounded-br-sm'
-                                    : 'bg-surface-100 text-surface-800 rounded-bl-sm'
+                                    : 'bg-white/5 text-surface-800 rounded-bl-sm'
                                 }`}
                             >
                                 <MessageContent content={msg.content} />
                                 {msg.actions && msg.actions.length > 0 && (
-                                    <div className="mt-2 pt-2 border-t border-surface-200/50">
+                                    <div className="mt-2 pt-2 border-t border-white/10">
                                         {msg.actions.map((action: any, j: number) => (
                                             <div key={j} className="text-xs text-surface-500 flex items-center gap-1">
                                                 <Sparkles className="h-3 w-3" />
@@ -106,7 +113,7 @@ export default function ChatPanel() {
                                 )}
                             </div>
                             {msg.role === 'user' && (
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-200 flex-shrink-0 mt-0.5">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 flex-shrink-0 mt-0.5">
                                     <User className="h-3.5 w-3.5 text-surface-600" />
                                 </div>
                             )}
@@ -115,11 +122,11 @@ export default function ChatPanel() {
                 )}
                 {isLoading && (
                     <div className="flex gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 flex-shrink-0">
-                            <Bot className="h-3.5 w-3.5 text-primary-600" />
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-500/15 flex-shrink-0">
+                            <Bot className="h-3.5 w-3.5 text-primary-400" />
                         </div>
-                        <div className="bg-surface-100 rounded-xl px-4 py-3 rounded-bl-sm">
-                            <Loader2 className="h-4 w-4 text-surface-400 animate-spin" />
+                        <div className="bg-white/5 rounded-xl px-4 py-3 rounded-bl-sm">
+                            <Loader2 className="h-4 w-4 text-surface-500 animate-spin" />
                         </div>
                     </div>
                 )}
@@ -127,7 +134,7 @@ export default function ChatPanel() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-surface-200 p-3">
+            <div className="border-t border-white/5 p-3">
                 <div className="flex gap-2">
                     <input
                         ref={inputRef}
@@ -139,29 +146,28 @@ export default function ChatPanel() {
                         onKeyDown={e => e.key === 'Enter' && handleSend()}
                         disabled={isLoading}
                     />
-                    <button
+                    <motion.button
+                        whileHover={{ y: -2, boxShadow: '0 0 15px rgba(139,92,246,0.3)' }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={handleSend}
                         disabled={!input.trim() || isLoading}
                         className="btn-primary px-3"
                     >
                         <Send className="h-4 w-4" />
-                    </button>
+                    </motion.button>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 }
 
 function MessageContent({ content }: { content: string }) {
-    // Simple markdown-like rendering
     const lines = content.split('\n');
     return (
         <div className="space-y-1">
             {lines.map((line, i) => {
                 if (!line.trim()) return <br key={i} />;
-                // Bold
                 let processed = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                // Bullet points
                 if (processed.startsWith('• ') || processed.startsWith('- ')) {
                     return (
                         <div key={i} className="flex gap-1.5 items-start">
@@ -170,7 +176,6 @@ function MessageContent({ content }: { content: string }) {
                         </div>
                     );
                 }
-                // Numbered lists
                 const numMatch = processed.match(/^(\d+)\.\s(.*)$/);
                 if (numMatch) {
                     return (

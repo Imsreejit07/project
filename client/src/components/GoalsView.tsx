@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Target, Plus, ChevronRight, Edit2, Trash2, FolderOpen, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
+import GlowCard from './GlowCard';
 
 export default function GoalsView() {
     const { state, dispatch, actions } = useApp();
@@ -20,15 +22,20 @@ export default function GoalsView() {
     };
 
     return (
-        <div className="animate-fade-in space-y-6">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">Goals</h1>
+                    <h1 className="text-2xl font-bold text-surface-900 tracking-tight">Goals</h1>
                     <p className="text-surface-500 mt-1">Define what matters and track your progress</p>
                 </div>
-                <button onClick={() => dispatch({ type: 'TOGGLE_CREATE_GOAL' })} className="btn-primary">
+                <motion.button
+                    whileHover={{ y: -2, boxShadow: '0 0 15px rgba(139,92,246,0.3)' }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => dispatch({ type: 'TOGGLE_CREATE_GOAL' })}
+                    className="btn-primary"
+                >
                     <Plus className="h-4 w-4" /> New Goal
-                </button>
+                </motion.button>
             </div>
 
             {/* Filters */}
@@ -37,7 +44,7 @@ export default function GoalsView() {
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
-                        className={`btn-sm ${filter === f ? 'bg-primary-100 text-primary-700' : 'btn-ghost'}`}
+                        className={`btn-sm ${filter === f ? 'bg-primary-500/15 text-primary-400' : 'btn-ghost'}`}
                     >
                         {f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
@@ -46,14 +53,18 @@ export default function GoalsView() {
 
             {/* Goals list */}
             {goals.length === 0 ? (
-                <div className="card p-12 text-center">
-                    <Target className="h-12 w-12 text-surface-300 mx-auto mb-4" />
+                <GlowCard className="p-12 text-center">
+                    <Target className="h-12 w-12 text-surface-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-surface-700 mb-2">No goals yet</h3>
                     <p className="text-sm text-surface-500 mb-4">Goals help you connect daily tasks to meaningful outcomes.</p>
-                    <button onClick={() => dispatch({ type: 'TOGGLE_CREATE_GOAL' })} className="btn-primary">
+                    <motion.button
+                        whileHover={{ y: -2, boxShadow: '0 0 15px rgba(139,92,246,0.3)' }}
+                        onClick={() => dispatch({ type: 'TOGGLE_CREATE_GOAL' })}
+                        className="btn-primary"
+                    >
                         <Plus className="h-4 w-4" /> Create Your First Goal
-                    </button>
-                </div>
+                    </motion.button>
+                </GlowCard>
             ) : (
                 <div className="space-y-4">
                     {goals.map(goal => {
@@ -63,14 +74,14 @@ export default function GoalsView() {
                         const isExpanded = state.selectedGoalId === goal.id;
 
                         return (
-                            <div key={goal.id} className="card-hover overflow-hidden">
+                            <GlowCard key={goal.id} className="overflow-hidden">
                                 <div
                                     className="p-5 cursor-pointer"
                                     onClick={() => dispatch({ type: 'SET_SELECTED_GOAL', id: isExpanded ? null : goal.id })}
                                 >
                                     <div className="flex items-start gap-4">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-light flex-shrink-0">
-                                            <Target className="h-5 w-5 text-accent" />
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-500/15 flex-shrink-0">
+                                            <Target className="h-5 w-5 text-primary-400" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
@@ -93,7 +104,7 @@ export default function GoalsView() {
                                                         autoFocus
                                                     />
                                                 ) : (
-                                                    <h3 className="text-lg font-semibold text-surface-900">{goal.title}</h3>
+                                                    <h3 className="text-lg font-semibold text-surface-900 tracking-tight">{goal.title}</h3>
                                                 )}
                                                 <PriorityIndicator priority={goal.priority} />
                                             </div>
@@ -102,46 +113,48 @@ export default function GoalsView() {
                                             )}
                                             <div className="flex items-center gap-4 mt-3">
                                                 <div className="flex-1 max-w-xs">
-                                                    <div className="h-2 rounded-full bg-surface-200 overflow-hidden">
+                                                    <div className="h-2 rounded-full bg-white/5 overflow-hidden">
                                                         <div
-                                                            className="h-full rounded-full bg-accent transition-all duration-500"
+                                                            className="h-full rounded-full bg-gradient-to-r from-primary-600 to-primary-400 transition-all duration-500"
                                                             style={{ width: `${progress}%` }}
                                                         />
                                                     </div>
                                                 </div>
                                                 <span className="text-xs text-surface-500">{progress}%</span>
-                                                <span className="text-xs text-surface-400">
+                                                <span className="text-xs text-surface-500">
                                                     {gProjects.length} project{gProjects.length !== 1 ? 's' : ''} · {gTasks.length} task{gTasks.length !== 1 ? 's' : ''}
                                                 </span>
                                                 {goal.target_date && (
-                                                    <span className="text-xs text-surface-400">Target: {goal.target_date}</span>
+                                                    <span className="text-xs text-surface-500">Target: {goal.target_date}</span>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1">
-                                            <button
+                                            <motion.button
+                                                whileHover={{ y: -2 }}
                                                 onClick={e => { e.stopPropagation(); setEditingId(goal.id); setEditTitle(goal.title); }}
                                                 className="btn-icon btn-ghost p-1.5"
                                             >
                                                 <Edit2 className="h-3.5 w-3.5" />
-                                            </button>
-                                            <button
+                                            </motion.button>
+                                            <motion.button
+                                                whileHover={{ y: -2 }}
                                                 onClick={e => { e.stopPropagation(); actions.deleteGoal(goal.id); }}
                                                 className="btn-icon btn-ghost p-1.5 text-danger hover:text-danger"
                                             >
                                                 <Trash2 className="h-3.5 w-3.5" />
-                                            </button>
-                                            <ChevronRight className={`h-4 w-4 text-surface-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                                            </motion.button>
+                                            <ChevronRight className={`h-4 w-4 text-surface-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Expanded view */}
                                 {isExpanded && (
-                                    <div className="border-t border-surface-200 bg-surface-50 p-5 animate-slide-down">
+                                    <div className="border-t border-white/5 bg-white/[0.02] p-5 animate-slide-down">
                                         {goal.vision && (
                                             <div className="mb-4">
-                                                <h4 className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-1">Vision</h4>
+                                                <h4 className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-1">Vision</h4>
                                                 <p className="text-sm text-surface-600">{goal.vision}</p>
                                             </div>
                                         )}
@@ -149,7 +162,7 @@ export default function GoalsView() {
                                         {/* Projects under this goal */}
                                         <div className="mb-4">
                                             <div className="flex items-center justify-between mb-2">
-                                                <h4 className="text-xs font-semibold uppercase tracking-wider text-surface-400">Projects</h4>
+                                                <h4 className="text-xs font-semibold uppercase tracking-wider text-surface-500">Projects</h4>
                                                 <button
                                                     onClick={() => dispatch({ type: 'TOGGLE_CREATE_PROJECT' })}
                                                     className="btn-ghost btn-sm text-xs"
@@ -158,12 +171,12 @@ export default function GoalsView() {
                                                 </button>
                                             </div>
                                             {gProjects.length === 0 ? (
-                                                <p className="text-xs text-surface-400 italic">No projects linked</p>
+                                                <p className="text-xs text-surface-500 italic">No projects linked</p>
                                             ) : (
                                                 <div className="space-y-2">
                                                     {gProjects.map(p => (
-                                                        <div key={p.id} className="flex items-center gap-2 p-2 rounded-lg bg-surface-0">
-                                                            <FolderOpen className="h-4 w-4 text-primary-500" />
+                                                        <div key={p.id} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
+                                                            <FolderOpen className="h-4 w-4 text-primary-400" />
                                                             <span className="text-sm text-surface-700">{p.title}</span>
                                                             <span className={`badge-${p.status === 'active' ? 'primary' : 'neutral'} ml-auto`}>
                                                                 {p.status}
@@ -176,9 +189,9 @@ export default function GoalsView() {
 
                                         {/* Tasks under this goal */}
                                         <div>
-                                            <h4 className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-2">Tasks</h4>
+                                            <h4 className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-2">Tasks</h4>
                                             {gTasks.length === 0 ? (
-                                                <p className="text-xs text-surface-400 italic">No tasks linked</p>
+                                                <p className="text-xs text-surface-500 italic">No tasks linked</p>
                                             ) : (
                                                 <div className="space-y-1">
                                                     {gTasks.slice(0, 8).map(t => (
@@ -188,31 +201,32 @@ export default function GoalsView() {
                                                                     if (t.status !== 'completed') actions.completeTask(t.id);
                                                                 }}
                                                                 className={`h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center
-                                  ${t.status === 'completed' ? 'border-success bg-success' : 'border-surface-300 hover:border-primary-400'}`}
+                                  ${t.status === 'completed' ? 'border-success bg-success' : 'border-surface-400 hover:border-primary-400'}`}
                                                             >
                                                                 {t.status === 'completed' && <Check className="h-2.5 w-2.5 text-white" />}
                                                             </button>
-                                                            <span className={`text-sm ${t.status === 'completed' ? 'text-surface-400 line-through' : 'text-surface-700'}`}>
+                                                            <span className={`text-sm ${t.status === 'completed' ? 'text-surface-500 line-through' : 'text-surface-700'}`}>
                                                                 {t.title}
                                                             </span>
                                                         </div>
                                                     ))}
                                                     {gTasks.length > 8 && (
-                                                        <p className="text-xs text-surface-400 pl-6">+{gTasks.length - 8} more</p>
+                                                        <p className="text-xs text-surface-500 pl-6">+{gTasks.length - 8} more</p>
                                                     )}
                                                 </div>
                                             )}
                                         </div>
 
                                         {/* Status actions */}
-                                        <div className="flex gap-2 mt-4 pt-4 border-t border-surface-200">
+                                        <div className="flex gap-2 mt-4 pt-4 border-t border-white/5">
                                             {goal.status !== 'completed' && (
-                                                <button
+                                                <motion.button
+                                                    whileHover={{ y: -2 }}
                                                     onClick={() => actions.updateGoal(goal.id, { status: 'completed' })}
                                                     className="btn-sm btn-secondary"
                                                 >
                                                     <Check className="h-3 w-3" /> Mark Complete
-                                                </button>
+                                                </motion.button>
                                             )}
                                             {goal.status === 'active' && (
                                                 <button
@@ -233,7 +247,7 @@ export default function GoalsView() {
                                         </div>
                                     </div>
                                 )}
-                            </div>
+                            </GlowCard>
                         );
                     })}
                 </div>
@@ -244,11 +258,11 @@ export default function GoalsView() {
 
 function PriorityIndicator({ priority }: { priority: number }) {
     if (priority <= 0) return null;
-    const colors = ['', 'bg-blue-200', 'bg-blue-300', 'bg-warning', 'bg-orange-400', 'bg-danger'];
+    const colors = ['', 'bg-primary-300', 'bg-primary-400', 'bg-warning', 'bg-orange-400', 'bg-danger'];
     return (
         <div className="flex gap-0.5" title={`Priority: ${priority}`}>
             {Array.from({ length: Math.min(priority, 5) }).map((_, i) => (
-                <div key={i} className={`h-1.5 w-1.5 rounded-full ${colors[priority] || 'bg-surface-300'}`} />
+                <div key={i} className={`h-1.5 w-1.5 rounded-full ${colors[priority] || 'bg-surface-400'}`} />
             ))}
         </div>
     );

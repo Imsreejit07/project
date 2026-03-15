@@ -50,13 +50,13 @@ export default function BillingView() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold">Billing</h2>
+                <h2 className="text-2xl font-bold text-surface-900 tracking-tight">Billing</h2>
                 <p className="text-surface-400 mt-1">Current plan: <span className="text-surface-200 font-medium uppercase">{userPlan}</span></p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
                 {plans.map((plan) => (
-                    <div key={plan.id} className={`card-glow rounded-xl p-5 border ${userPlan === plan.id ? 'border-primary-500' : 'border-surface-800'}`}>
+                    <div key={plan.id} className={`card-glow rounded-xl p-5 border ${userPlan === plan.id ? 'border-primary-500/50' : 'border-white/10'}`}>
                         <div className="flex items-baseline justify-between">
                             <h3 className="text-lg font-semibold">{plan.name}</h3>
                             <div className="text-right">

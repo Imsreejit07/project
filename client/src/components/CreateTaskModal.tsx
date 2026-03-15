@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { X } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function CreateTaskModal() {
     const { state, dispatch, actions } = useApp();
@@ -43,7 +44,7 @@ export default function CreateTaskModal() {
         <ModalBackdrop onClose={() => dispatch({ type: 'TOGGLE_CREATE_TASK' })}>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-lg font-semibold text-surface-900">New Task</h2>
+                    <h2 className="text-lg font-semibold text-surface-900 tracking-tight">New Task</h2>
                     <button type="button" onClick={() => dispatch({ type: 'TOGGLE_CREATE_TASK' })} className="btn-icon btn-ghost">
                         <X className="h-4 w-4" />
                     </button>
@@ -145,9 +146,15 @@ export default function CreateTaskModal() {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                    <button type="submit" disabled={!form.title.trim() || saving} className="btn-primary flex-1">
+                    <motion.button
+                        whileHover={{ y: -2, boxShadow: '0 0 15px rgba(139,92,246,0.3)' }}
+                        whileTap={{ scale: 0.97 }}
+                        type="submit"
+                        disabled={!form.title.trim() || saving}
+                        className="btn-primary flex-1"
+                    >
                         {saving ? 'Creating...' : 'Create Task'}
-                    </button>
+                    </motion.button>
                     <button type="button" onClick={() => dispatch({ type: 'TOGGLE_CREATE_TASK' })} className="btn-secondary">
                         Cancel
                     </button>
@@ -160,10 +167,16 @@ export default function CreateTaskModal() {
 function ModalBackdrop({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-surface-900/40 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-surface-0 rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-slide-up max-h-[90vh] overflow-auto">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="relative bg-[#0A0A0A] rounded-2xl shadow-2xl border border-white/10 w-full max-w-lg p-6 max-h-[90vh] overflow-auto"
+            >
                 {children}
-            </div>
+            </motion.div>
         </div>
     );
 }

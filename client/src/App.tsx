@@ -4,10 +4,38 @@ import LandingPage from './components/LandingPage';
 import AuthGate from './components/AuthGate';
 import BillingView from './components/BillingView';
 import AdminView from './components/AdminView';
-import { useState, useEffect } from 'react';
+import ScrollToTop from './components/ScrollToTop';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import * as api from './api';
+import SplinePreloader from './components/SplinePreloader';
+
+// Lazy-load feature & pricing pages
+const FlowEnginePage = lazy(() => import('./pages/features/FlowEnginePage'));
+const BentoInsightsPage = lazy(() => import('./pages/features/BentoInsightsPage'));
+const AIStrategistPage = lazy(() => import('./pages/features/AIStrategistPage'));
+const ArchitectPage = lazy(() => import('./pages/features/ArchitectPage'));
+const ZenModePage = lazy(() => import('./pages/features/ZenModePage'));
+const ConnectPage = lazy(() => import('./pages/features/ConnectPage'));
+const PricingPage = lazy(() => import('./pages/Pricing'));
+const FeaturesOverview = lazy(() => import('./pages/FeaturesOverview'));
 
 type User = { id: string; name: string; email: string; plan: 'free' | 'pro'; role: 'user' | 'admin' };
+
+const pageTransition = {
+    initial: { opacity: 0, scale: 0.98 },
+    animate: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
+    exit: { opacity: 0, scale: 0.98, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const } },
+};
+
+function PageWrapper({ children }: { children: React.ReactNode }) {
+    return (
+        <motion.div {...pageTransition}>
+            {children}
+        </motion.div>
+    );
+}
 
 function AppShell({ user }: { user: User }) {
     const params = new URLSearchParams(window.location.search);
@@ -15,7 +43,7 @@ function AppShell({ user }: { user: User }) {
 
     if (route === 'billing') {
         return (
-            <div className="min-h-screen p-6 md:p-8 bg-surface-950 text-surface-100">
+            <div className="min-h-screen p-6 md:p-8 bg-[#020203] text-surface-900">
                 <BillingView />
             </div>
         );
@@ -23,7 +51,7 @@ function AppShell({ user }: { user: User }) {
 
     if (route === 'admin' && user.role === 'admin') {
         return (
-            <div className="min-h-screen p-6 md:p-8 bg-surface-950 text-surface-100">
+            <div className="min-h-screen p-6 md:p-8 bg-[#020203] text-surface-900">
                 <AdminView />
             </div>
         );
@@ -37,61 +65,92 @@ function AppShell({ user }: { user: User }) {
 }
 
 export default function App() {
+    const location = useLocation();
     const [showAuth, setShowAuth] = useState(false);
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(() => {
-        // Only load from token if one exists, otherwise skip loading
-        return !!localStorage.getItem('flowstate_token');
-    });
+    const [loading, setLoading] = useState(() => !!localStorage.getItem('flowstate_token'));
 
-    // Only validate token if it exists
     useEffect(() => {
         if (!loading) return;
-
         const validateToken = async () => {
             try {
                 const token = localStorage.getItem('flowstate_token');
                 if (!token) {
-                    setLoading(false);
+                    // Let the preloader run its course even if no token
                     return;
                 }
-
-                // Quick validation with 3 second timeout
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 3000);
-
-                try {
-                    const me = await api.getMe();
-                    clearTimeout(timeout);
-                    setUser(me as User);
-                    setLoading(false);
-                } catch (err) {
-                    clearTimeout(timeout);
-                    // Validation failed, clear token
-                    localStorage.removeItem('flowstate_token');
-                    setLoading(false);
-                }
-            } catch (err) {
-                setLoading(false);
+                const me = await api.getMe();
+                setUser(me as User);
+            } catch {
+                localStorage.removeItem('flowstate_token');
             }
         };
-
         validateToken();
     }, [loading]);
 
-    if (loading) {
-        return <div className="min-h-screen flex items-center justify-center text-surface-400">Loading...</div>;
+    const fallback = (
+        <div className="min-h-screen flex items-center justify-center bg-[#020203]">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 animate-pulse-subtle" />
+        </div>
+    );
+
+    // Public feature/pricing pages — always accessible without auth
+    const publicPaths = ['/pricing', '/features'];
+    const isPublicPage = publicPaths.some(p => location.pathname === p);
+
+    // Public feature showcase pages (marketing only)
+    const publicFeaturePaths = ['/features/flow-engine', '/features/bento-insights', '/features/ai-strategist', '/features/architect', '/features/zen-mode', '/features/connect'];
+    const isPublicFeaturePage = publicFeaturePaths.includes(location.pathname);
+
+    if (isPublicPage || isPublicFeaturePage) {
+        return (
+            <>
+                <ScrollToTop />
+                <Suspense fallback={fallback}>
+                    <AnimatePresence mode="wait">
+                        <Routes location={location} key={location.pathname}>
+                            <Route path="/features" element={<PageWrapper><FeaturesOverview /></PageWrapper>} />
+                            <Route path="/features/flow-engine" element={<PageWrapper><FlowEnginePage /></PageWrapper>} />
+                            <Route path="/features/bento-insights" element={<PageWrapper><BentoInsightsPage /></PageWrapper>} />
+                            <Route path="/features/ai-strategist" element={<PageWrapper><AIStrategistPage /></PageWrapper>} />
+                            <Route path="/features/architect" element={<PageWrapper><ArchitectPage /></PageWrapper>} />
+                            <Route path="/features/zen-mode" element={<PageWrapper><ZenModePage /></PageWrapper>} />
+                            <Route path="/features/connect" element={<PageWrapper><ConnectPage /></PageWrapper>} />
+                            <Route path="/pricing" element={<PageWrapper><PricingPage /></PageWrapper>} />
+                        </Routes>
+                    </AnimatePresence>
+                </Suspense>
+            </>
+        );
     }
 
-    if (!showAuth && !user) {
-        return <LandingPage onGetStarted={() => setShowAuth(true)} />;
-    }
-
-    if (!user) {
-        return <AuthGate onAuthenticated={(u) => setUser(u)} />;
-    }
-
+    // Main app flow
     return (
-        <AppShell user={user} />
+        <>
+            <ScrollToTop />
+            <AnimatePresence mode="wait">
+                {loading && (
+                    <SplinePreloader key="loading" onComplete={() => setLoading(false)} />
+                )}
+
+                {!loading && !showAuth && !user && (
+                    <motion.div key="landing" {...pageTransition}>
+                        <LandingPage onGetStarted={() => setShowAuth(true)} />
+                    </motion.div>
+                )}
+
+                {!loading && !user && showAuth && (
+                    <motion.div key="auth" {...pageTransition}>
+                        <AuthGate onAuthenticated={(u) => setUser(u)} />
+                    </motion.div>
+                )}
+
+                {!loading && user && (
+                    <motion.div key="app" {...pageTransition}>
+                        <AppShell user={user} />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
     );
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BarChart3, Clock, Flame, TrendingUp, Tag, Lightbulb } from 'lucide-react';
 import * as api from '@/api';
 import { PatternAnalysis, UserStats } from '../types';
+import GlowCard from './GlowCard';
 
 export default function InsightsView() {
     const [stats, setStats] = useState<UserStats | null>(null);
@@ -17,16 +18,16 @@ export default function InsightsView() {
 
     if (loading) {
         return (
-            <div className="animate-fade-in flex items-center justify-center py-20">
+            <div className="flex items-center justify-center py-20">
                 <p className="text-surface-500">Analyzing your patterns...</p>
             </div>
         );
     }
 
     return (
-        <div className="animate-fade-in space-y-6">
+        <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-surface-900">Insights</h1>
+                <h1 className="text-2xl font-bold text-surface-900 tracking-tight">Insights</h1>
                 <p className="text-surface-500 mt-1">Understand your work patterns and improve over time</p>
             </div>
 
@@ -43,17 +44,17 @@ export default function InsightsView() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Completion chart */}
                 {stats && stats.completionsByDay.length > 0 && (
-                    <div className="card p-5">
-                        <h3 className="font-semibold text-surface-900 mb-4">Completions (30 days)</h3>
+                    <GlowCard className="p-5">
+                        <h3 className="font-semibold text-surface-900 mb-4 tracking-tight">Completions (30 days)</h3>
                         <div className="flex items-end gap-1 h-32">
                             {stats.completionsByDay.map((day, i) => {
                                 const max = Math.max(...stats.completionsByDay.map(d => d.count), 1);
                                 const height = Math.max(4, (day.count / max) * 100);
                                 return (
                                     <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1">
-                                        <span className="text-[9px] text-surface-400">{day.count}</span>
+                                        <span className="text-[9px] text-surface-500">{day.count}</span>
                                         <div
-                                            className="w-full rounded-sm bg-primary-400 min-h-[4px] transition-all hover:bg-primary-500"
+                                            className="w-full rounded-sm bg-gradient-to-t from-primary-600 to-primary-400 min-h-[4px] transition-all hover:from-primary-500 hover:to-primary-300"
                                             style={{ height: `${height}%` }}
                                             title={`${day.day}: ${day.count} tasks completed`}
                                         />
@@ -61,17 +62,17 @@ export default function InsightsView() {
                                 );
                             })}
                         </div>
-                        <div className="flex justify-between mt-2 text-[10px] text-surface-400">
+                        <div className="flex justify-between mt-2 text-[10px] text-surface-500">
                             <span>{stats.completionsByDay[0]?.day}</span>
                             <span>{stats.completionsByDay[stats.completionsByDay.length - 1]?.day}</span>
                         </div>
-                    </div>
+                    </GlowCard>
                 )}
 
                 {/* Productive time */}
                 {patterns && (
-                    <div className="card p-5">
-                        <h3 className="font-semibold text-surface-900 mb-4">Your Productive Time</h3>
+                    <GlowCard className="p-5">
+                        <h3 className="font-semibold text-surface-900 mb-4 tracking-tight">Your Productive Time</h3>
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-warning-light">
@@ -86,7 +87,7 @@ export default function InsightsView() {
                             <div>
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-surface-600">Avg tasks per day</span>
-                                    <span className="font-medium">{patterns.avgTasksPerDay}</span>
+                                    <span className="font-medium text-surface-800">{patterns.avgTasksPerDay}</span>
                                 </div>
                             </div>
 
@@ -104,37 +105,37 @@ export default function InsightsView() {
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </GlowCard>
                 )}
             </div>
 
             {/* Recommendations */}
             {patterns && patterns.recommendations.length > 0 && (
-                <div className="card p-5 bg-primary-50/50 border-primary-200">
+                <GlowCard className="p-5 border-primary-500/20">
                     <div className="flex items-center gap-2 mb-4">
-                        <Lightbulb className="h-5 w-5 text-primary-600" />
-                        <h3 className="font-semibold text-primary-900">Recommendations</h3>
+                        <Lightbulb className="h-5 w-5 text-primary-400" />
+                        <h3 className="font-semibold text-surface-900 tracking-tight">Recommendations</h3>
                     </div>
                     <div className="space-y-3">
                         {patterns.recommendations.map((rec, i) => (
                             <div key={i} className="flex items-start gap-3">
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-200 text-primary-700 text-xs font-bold flex-shrink-0">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-500/15 text-primary-400 text-xs font-bold flex-shrink-0">
                                     {i + 1}
                                 </div>
-                                <p className="text-sm text-primary-800">{rec}</p>
+                                <p className="text-sm text-surface-700">{rec}</p>
                             </div>
                         ))}
                     </div>
-                </div>
+                </GlowCard>
             )}
 
             {/* Empty state */}
             {(!stats || stats.totalTasks === 0) && (
-                <div className="card p-12 text-center">
-                    <BarChart3 className="h-12 w-12 text-surface-300 mx-auto mb-4" />
+                <GlowCard className="p-12 text-center">
+                    <BarChart3 className="h-12 w-12 text-surface-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-surface-700 mb-2">No data yet</h3>
                     <p className="text-sm text-surface-500">Complete some tasks and the insights will appear here.</p>
-                </div>
+                </GlowCard>
             )}
         </div>
     );
@@ -144,13 +145,13 @@ function InsightCard({ icon: Icon, label, value, subtitle }: {
     icon: any; label: string; value: string; subtitle: string;
 }) {
     return (
-        <div className="card p-4">
+        <GlowCard className="p-4">
             <div className="flex items-center gap-2 text-surface-500 mb-2">
                 <Icon className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">{label}</span>
             </div>
-            <div className="text-2xl font-bold text-surface-900">{value}</div>
-            <div className="text-xs text-surface-400 mt-0.5">{subtitle}</div>
-        </div>
+            <div className="text-2xl font-bold text-surface-900 tracking-tight">{value}</div>
+            <div className="text-xs text-surface-500 mt-0.5">{subtitle}</div>
+        </GlowCard>
     );
 }

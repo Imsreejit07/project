@@ -25,7 +25,7 @@ export default function AdminView() {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+            <h2 className="text-2xl font-bold text-surface-900 tracking-tight">Admin Dashboard</h2>
 
             <div className="grid md:grid-cols-5 gap-3">
                 {[
@@ -35,15 +35,15 @@ export default function AdminView() {
                     ['Tasks', stats.totalTasks],
                     ['Active Today', stats.activeToday],
                 ].map(([label, value]) => (
-                    <div key={label} className="card-glow rounded-xl p-4 border border-surface-800">
+                    <div key={label} className="card-glow rounded-xl p-4 border border-white/10">
                         <div className="text-xs text-surface-400 uppercase">{label}</div>
                         <div className="text-2xl font-bold mt-1">{value}</div>
                     </div>
                 ))}
             </div>
 
-            <div className="card-glow rounded-xl border border-surface-800 overflow-hidden">
-                <div className="px-4 py-3 border-b border-surface-800 font-medium">Users</div>
+            <div className="card-glow rounded-xl border border-white/10 overflow-hidden">
+                <div className="px-4 py-3 border-b border-white/10 font-medium">Users</div>
                 <div className="divide-y divide-surface-800">
                     {users.map((u) => (
                         <div key={u.id} className="px-4 py-3 flex items-center justify-between gap-3">

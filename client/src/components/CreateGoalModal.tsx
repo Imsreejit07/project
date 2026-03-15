@@ -36,7 +36,7 @@ export default function CreateGoalModal() {
         <ModalBackdrop onClose={() => dispatch({ type: 'TOGGLE_CREATE_GOAL' })}>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-lg font-semibold text-surface-900">New Goal</h2>
+                    <h2 className="text-lg font-semibold text-surface-900 tracking-tight">New Goal</h2>
                     <button type="button" onClick={() => dispatch({ type: 'TOGGLE_CREATE_GOAL' })} className="btn-icon btn-ghost">
                         <X className="h-4 w-4" />
                     </button>
